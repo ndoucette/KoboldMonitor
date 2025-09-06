@@ -215,6 +215,24 @@
             font-weight: bold;
         }
 
+        .debug-button {
+            position: fixed;
+            top: 10px;
+            right: 120px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            background-color: #ff9900;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+        }
+
+        .debug-button:hover {
+            background-color: #ffaa00;
+        }
+
         .connected {
             background-color: #00cc00;
             color: #ffffff;
@@ -224,10 +242,49 @@
             background-color: #cc0000;
             color: #ffffff;
         }
+
+        .manequin-container {
+            width: 80px;
+            height: 120px;
+            margin: 10px auto;
+            position: relative;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 120"><path d="M40 5 C50 5 55 15 55 25 C55 30 50 35 45 35 L45 45 C50 45 60 50 60 70 L60 85 C65 85 70 90 70 100 L70 115 L55 115 L55 105 C55 100 50 95 45 95 L35 95 C30 95 25 100 25 105 L25 115 L10 115 L10 100 C10 90 15 85 20 85 L20 70 C20 50 30 45 35 45 L35 35 C30 35 25 30 25 25 C25 15 30 5 40 5 Z" fill="%23444444" stroke="%23666666" stroke-width="1"/></svg>') center center no-repeat;
+            background-size: contain;
+        }
+
+        .injury-dot {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            border: 1px solid #000;
+        }
+
+        .injury-level-1 { background-color: #ffff00; }
+        .injury-level-2 { background-color: #ff0000; }
+        .injury-level-3 { background-color: #aa0000; }
+
+        /* Injury position mapping */
+        .injury-head { top: 8px; left: 37px; }
+        .injury-neck { top: 18px; left: 37px; }
+        .injury-chest { top: 28px; left: 37px; }
+        .injury-abdomen { top: 38px; left: 37px; }
+        .injury-back { top: 28px; left: 47px; }
+        .injury-leftArm { top: 30px; left: 25px; }
+        .injury-rightArm { top: 30px; left: 50px; }
+        .injury-leftHand { top: 42px; left: 20px; }
+        .injury-rightHand { top: 42px; left: 55px; }
+        .injury-leftLeg { top: 70px; left: 32px; }
+        .injury-rightLeg { top: 70px; left: 43px; }
+        .injury-leftFoot { top: 105px; left: 30px; }
+        .injury-rightFoot { top: 105px; left: 45px; }
+        .injury-leftEye { top: 10px; left: 35px; }
+        .injury-rightEye { top: 10px; left: 42px; }
     </style>
 </head>
 <body>
     <div class="connection-status" id="connectionStatus">Connecting...</div>
+    <button class="debug-button" onclick="addTestCharacter()">Debug Test</button>
     
     <div class="header">
         <h1>GemStone IV Bot Monitor</h1>
@@ -235,9 +292,7 @@
     </div>
 
     <div class="dashboard" id="dashboard">
-        <div class="no-characters" id="noCharacters">
-            No active characters. Waiting for bot updates...
-        </div>
+        <!-- Cards will be added dynamically when characters send updates -->
     </div>
 
     <script>
@@ -310,6 +365,38 @@
             return false;
         }
 
+        function createManequin(injuries) {
+            if (!injuries || !injuries.wounds) return '<div class="manequin-container"></div>';
+            
+            let dotsHtml = '';
+            const bodyParts = {
+                'head': 'injury-head',
+                'neck': 'injury-neck', 
+                'chest': 'injury-chest',
+                'abdomen': 'injury-abdomen',
+                'back': 'injury-back',
+                'leftArm': 'injury-leftArm',
+                'rightArm': 'injury-rightArm',
+                'leftHand': 'injury-leftHand',
+                'rightHand': 'injury-rightHand',
+                'leftLeg': 'injury-leftLeg',
+                'rightLeg': 'injury-rightLeg',
+                'leftFoot': 'injury-leftFoot',
+                'rightFoot': 'injury-rightFoot',
+                'leftEye': 'injury-leftEye',
+                'rightEye': 'injury-rightEye'
+            };
+
+            for (const [part, className] of Object.entries(bodyParts)) {
+                const level = injuries.wounds[part] || 0;
+                if (level > 0) {
+                    dotsHtml += `<div class="injury-dot injury-level-${level} ${className}"></div>`;
+                }
+            }
+
+            return `<div class="manequin-container">${dotsHtml}</div>`;
+        }
+
         function createCharacterTile(charName, charData) {
             const currentTime = Date.now() / 1000;
             const lastUpdate = charData.server_timestamp || 0;
@@ -364,6 +451,8 @@
                         ${createVitalBar('Spirit', vitals.spirit, 'spirit')}
                     </div>
 
+                    ${createManequin(injuries)}
+
                     <div class="level-section">
                         Level: ${character.level || 0} (${experience.next_level_percent || 0}%) ${formatNumber(experience.experience_to_next_level || 0)} TNL
                     </div>
@@ -401,22 +490,61 @@
 
         function updateDashboard() {
             const dashboard = document.getElementById('dashboard');
-            const noCharacters = document.getElementById('noCharacters');
             
             const characterCount = Object.keys(characters).length;
             
             if (characterCount === 0) {
-                dashboard.innerHTML = '<div class="no-characters">No active characters. Waiting for bot updates...</div>';
+                dashboard.innerHTML = '';
                 return;
             }
 
-            // Hide no characters message and show character tiles
+            // Show character tiles
             let html = '';
             Object.entries(characters).forEach(([charName, charData]) => {
                 html += createCharacterTile(charName, charData);
             });
             
             dashboard.innerHTML = html;
+        }
+
+        function addTestCharacter() {
+            const testCharacter = {
+                "character": {
+                    "name": "TestBot",
+                    "level": 25
+                },
+                "vitals": {
+                    "health": { "current": 88, "max": 100, "percent": 88 },
+                    "mana": { "current": 150, "max": 200, "percent": 75 },
+                    "stamina": { "current": 60, "max": 60, "percent": 100 },
+                    "spirit": { "current": 8, "max": 10, "percent": 80 }
+                },
+                "status": {
+                    "stance": { "text": "Offensive", "value": 60 },
+                    "mindstate": { "text": "Clear as a bell", "value": 100 },
+                    "encumbrance": { "text": "Light", "value": 25 }
+                },
+                "injuries": {
+                    "wounds": {
+                        "nsys": 0, "head": 1, "neck": 0, "chest": 2, "abdomen": 0, "back": 0,
+                        "leftArm": 3, "rightArm": 0, "leftHand": 0, "rightHand": 1, 
+                        "leftLeg": 0, "rightLeg": 2, "leftFoot": 0, "rightFoot": 0, 
+                        "leftEye": 0, "rightEye": 0
+                    }
+                },
+                "location": { "room_id": 4321 },
+                "experience": {
+                    "experience_to_next_level": 25000, "next_level_percent": 45,
+                    "percent_capped": 15.5, "last_pulse": 180, "hourly_rate": 6200
+                },
+                "daily_tracking": {
+                    "xp_today": 85000, "silver_today": 320000, "bounty_points": 1250
+                },
+                "server_timestamp": Date.now() / 1000
+            };
+            
+            characters['TestBot'] = testCharacter;
+            updateDashboard();
         }
 
         // Update dashboard every 2 seconds to check for inactive characters
