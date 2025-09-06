@@ -89,7 +89,7 @@
         }
 
         .progress-bar-fill.capped-progress {
-            background: linear-gradient(90deg, #cc9900, #ffcc00);
+            background: linear-gradient(90deg, #0099cc, #33ccff);
         }
 
         .progress-label {
@@ -139,8 +139,114 @@
             font-weight: bold;
             color: #00ffff;
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             text-shadow: 0 0 5px #00ffff;
+        }
+
+        .character-location {
+            font-size: 11px;
+            color: #cccccc;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .room-title {
+            color: #ffcc00;
+            font-weight: bold;
+        }
+
+        .effects-section {
+            margin-top: 15px;
+            border-top: 1px solid #444444;
+            padding-top: 10px;
+        }
+
+        .effects-toggle {
+            background: none;
+            border: none;
+            color: #00ffff;
+            cursor: pointer;
+            font-size: 12px;
+            margin-bottom: 10px;
+            text-decoration: underline;
+            padding: 0;
+        }
+
+        .effects-toggle:hover {
+            color: #66ffff;
+        }
+
+        .effects-list {
+            display: none;
+        }
+
+        .effects-list.expanded {
+            display: block;
+        }
+
+        .effect-category {
+            margin-bottom: 10px;
+        }
+
+        .effect-category-title {
+            font-size: 11px;
+            color: #ffcc00;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .effect-bar {
+            margin-bottom: 4px;
+        }
+
+        .effect-label {
+            font-size: 10px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .effect-progress {
+            height: 12px;
+            background-color: #333333;
+            border: 1px solid #555555;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .effect-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 5px;
+        }
+
+        .effect-fill.spell {
+            background: linear-gradient(90deg, #9933cc, #cc66ff);
+        }
+
+        .effect-fill.buff {
+            background: linear-gradient(90deg, #00cc66, #66ff99);
+        }
+
+        .effect-fill.debuff {
+            background: linear-gradient(90deg, #cc3300, #ff6633);
+        }
+
+        .effect-fill.cooldown {
+            background: linear-gradient(90deg, #666666, #999999);
+        }
+
+        .effect-time {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            z-index: 1;
         }
 
         .stats-section {
@@ -231,12 +337,12 @@
         }
 
         .capped-section {
-            background-color: rgba(204, 153, 0, 0.2);
+            background-color: rgba(0, 153, 204, 0.2);
             padding: 8px;
             border-radius: 4px;
             margin: 10px 0;
             font-size: 12px;
-            border: 1px solid #cc9900;
+            border: 1px solid #0099cc;
         }
 
         .status-section {
@@ -410,6 +516,108 @@
             return num.toString();
         }
 
+        function formatTime(seconds) {
+            if (seconds < 60) {
+                return seconds + 's';
+            } else if (seconds < 3600) {
+                return Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's';
+            } else {
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                return hours + 'h ' + minutes + 'm';
+            }
+        }
+
+        function toggleEffects(characterName) {
+            const effectsList = document.getElementById('effects-' + characterName);
+            const toggle = document.getElementById('toggle-' + characterName);
+            
+            if (effectsList.classList.contains('expanded')) {
+                effectsList.classList.remove('expanded');
+                toggle.textContent = 'Show Effects';
+            } else {
+                effectsList.classList.add('expanded');
+                toggle.textContent = 'Hide Effects';
+            }
+        }
+
+        function createEffectsSection(effects, characterName) {
+            if (!effects) return '';
+            
+            let effectsHtml = '';
+            let totalEffects = 0;
+            
+            // Count total effects
+            if (effects.spells) totalEffects += effects.spells.length;
+            if (effects.buffs) totalEffects += effects.buffs.length;
+            if (effects.debuffs) totalEffects += effects.debuffs.length;
+            if (effects.cooldowns) totalEffects += effects.cooldowns.length;
+            
+            if (totalEffects === 0) return '';
+            
+            effectsHtml += `
+                <div class="effects-section">
+                    <button class="effects-toggle" id="toggle-${characterName}" onclick="toggleEffects('${characterName}')">
+                        Show Effects (${totalEffects})
+                    </button>
+                    <div class="effects-list" id="effects-${characterName}">
+            `;
+            
+            // Add spells
+            if (effects.spells && effects.spells.length > 0) {
+                effectsHtml += createEffectCategory('Spells', effects.spells, 'spell');
+            }
+            
+            // Add buffs
+            if (effects.buffs && effects.buffs.length > 0) {
+                effectsHtml += createEffectCategory('Buffs', effects.buffs, 'buff');
+            }
+            
+            // Add debuffs
+            if (effects.debuffs && effects.debuffs.length > 0) {
+                effectsHtml += createEffectCategory('Debuffs', effects.debuffs, 'debuff');
+            }
+            
+            // Add cooldowns
+            if (effects.cooldowns && effects.cooldowns.length > 0) {
+                effectsHtml += createEffectCategory('Cooldowns', effects.cooldowns, 'cooldown');
+            }
+            
+            effectsHtml += `
+                    </div>
+                </div>
+            `;
+            
+            return effectsHtml;
+        }
+
+        function createEffectCategory(title, effects, type) {
+            let html = `<div class="effect-category">
+                <div class="effect-category-title">${title}</div>
+            `;
+            
+            effects.forEach(effect => {
+                const maxDuration = 3600; // Assume 1 hour max for progress calculation
+                const progressPercent = Math.min((effect.remaining_seconds / maxDuration) * 100, 100);
+                
+                html += `
+                    <div class="effect-bar">
+                        <div class="effect-label">
+                            <span>${effect.name}</span>
+                            <span>${formatTime(effect.remaining_seconds)}</span>
+                        </div>
+                        <div class="effect-progress">
+                            <div class="effect-fill ${type}" style="width: ${progressPercent}%"></div>
+                            <div class="effect-time">${formatTime(effect.remaining_seconds)}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            return html;
+        }
+
         function getTimeSince(timestamp) {
             const now = Date.now() / 1000;
             const diff = now - timestamp;
@@ -479,12 +687,17 @@
             const dailyTracking = charData.daily_tracking || {};
             const location = charData.location || {};
             const injuries = charData.injuries || {};
+            const effects = charData.effects || {};
 
             return `
                 <div class="character-tile" id="char-${charName}">
                     ${isInactive ? '<div class="inactive-overlay"></div>' : ''}
                     <div class="last-update">${getTimeSince(lastUpdate)}</div>
                     <div class="character-name">${charName}</div>
+                    <div class="character-location">
+                        <span class="room-title">${location.room_title || 'Unknown Location'}</span><br>
+                        Room: ${location.room_id || '??'}
+                    </div>
                     
                     <div class="top-section">
                         <div class="manequin-section">
@@ -561,6 +774,8 @@
                             <div class="progress-text">${(experience.percent_capped || 0).toFixed(1)}%</div>
                         </div>
                     </div>
+
+                    ${createEffectsSection(effects, charName)}
                 </div>
             `;
         }
@@ -630,7 +845,24 @@
                         "leftEye": 0, "rightEye": 0
                     }
                 },
-                "location": { "room_id": 4321 },
+                "location": { 
+                    "room_id": 4321,
+                    "room_title": "[Test Chamber]"
+                },
+                "effects": {
+                    "spells": [
+                        { "name": "Elemental Defense I", "remaining_seconds": 1200, "end_time": Date.now() + 1200000 },
+                        { "name": "Stone Skin", "remaining_seconds": 450, "end_time": Date.now() + 450000 },
+                        { "name": "Strength", "remaining_seconds": 800, "end_time": Date.now() + 800000 }
+                    ],
+                    "buffs": [
+                        { "name": "Sigil of Focus", "remaining_seconds": 300, "end_time": Date.now() + 300000 }
+                    ],
+                    "debuffs": [],
+                    "cooldowns": [
+                        { "name": "Sign of Wracking", "remaining_seconds": 45, "end_time": Date.now() + 45000 }
+                    ]
+                },
                 "experience": {
                     "experience_to_next_level": 25000, "next_level_percent": 45,
                     "percent_capped": 15.5, "last_pulse": 180, "hourly_rate": 6200

@@ -1,0 +1,213 @@
+{
+  "character": {
+    "name": "Darkstone",
+    "level": 47
+  },
+  "vitals": {
+    "health": {
+      "current": 132,
+      "max": 145,
+      "percent": 91
+    },
+    "mana": {
+      "current": 287,
+      "max": 312,
+      "percent": 92
+    },
+    "stamina": {
+      "current": 85,
+      "max": 85,
+      "percent": 100
+    },
+    "spirit": {
+      "current": 9,
+      "max": 10,
+      "percent": 90
+    }
+  },
+  "status": {
+    "stance": {
+      "text": "Defensive",
+      "value": 80
+    },
+    "mindstate": {
+      "text": "Clear as a bell",
+      "value": 100
+    },
+    "encumbrance": {
+      "text": "Unencumbered",
+      "value": 0
+    }
+  },
+  "injuries": {
+    "wounds": {
+      "nsys": 0,
+      "head": 0,
+      "neck": 0,
+      "chest": 2,
+      "abdomen": 0,
+      "back": 0,
+      "leftArm": 1,
+      "rightArm": 0,
+      "leftHand": 0,
+      "rightHand": 0,
+      "leftLeg": 0,
+      "rightLeg": 0,
+      "leftFoot": 0,
+      "rightFoot": 0,
+      "leftEye": 0,
+      "rightEye": 0
+    },
+    "scars": {
+      "nsys": 0,
+      "head": 0,
+      "neck": 0,
+      "chest": 1,
+      "abdomen": 0,
+      "back": 0,
+      "leftArm": 0,
+      "rightArm": 0,
+      "leftHand": 0,
+      "rightHand": 0,
+      "leftLeg": 1,
+      "rightLeg": 0,
+      "leftFoot": 0,
+      "rightFoot": 0,
+      "leftEye": 0,
+      "rightEye": 0
+    }
+  },
+  "location": {
+    "room_id": 1776,
+    "room_title": "[Town Square Central]"
+  },
+  "effects": {
+    "spells": [
+      {
+        "name": "Elemental Defense I",
+        "remaining_seconds": 2145,
+        "end_time": 1737236712
+      },
+      {
+        "name": "Elemental Defense II",
+        "remaining_seconds": 2145,
+        "end_time": 1737236712
+      },
+      {
+        "name": "Elemental Defense III",
+        "remaining_seconds": 2145,
+        "end_time": 1737236712
+      },
+      {
+        "name": "Elemental Targeting",
+        "remaining_seconds": 1823,
+        "end_time": 1737236390
+      },
+      {
+        "name": "Elemental Barrier",
+        "remaining_seconds": 1823,
+        "end_time": 1737236390
+      },
+      {
+        "name": "Thurfel's Ward",
+        "remaining_seconds": 1543,
+        "end_time": 1737236110
+      },
+      {
+        "name": "Elemental Deflection",
+        "remaining_seconds": 1543,
+        "end_time": 1737236110
+      },
+      {
+        "name": "Elemental Bias",
+        "remaining_seconds": 1543,
+        "end_time": 1737236110
+      },
+      {
+        "name": "Strength",
+        "remaining_seconds": 1543,
+        "end_time": 1737236110
+      },
+      {
+        "name": "Floating Disk",
+        "remaining_seconds": 892,
+        "end_time": 1737235459
+      },
+      {
+        "name": "Stone Skin",
+        "remaining_seconds": 567,
+        "end_time": 1737235134
+      },
+      {
+        "name": "Prismatic Guard",
+        "remaining_seconds": 1235,
+        "end_time": 1737235802
+      },
+      {
+        "name": "Mass Blur",
+        "remaining_seconds": 1235,
+        "end_time": 1737235802
+      },
+      {
+        "name": "Melgorehn's Aura",
+        "remaining_seconds": 1235,
+        "end_time": 1737235802
+      }
+    ],
+    "buffs": [
+      {
+        "name": "Sigil of Focus",
+        "remaining_seconds": 345,
+        "end_time": 1737234912
+      },
+      {
+        "name": "Sigil of Major Bane",
+        "remaining_seconds": 678,
+        "end_time": 1737235245
+      }
+    ],
+    "debuffs": [],
+    "cooldowns": [
+      {
+        "name": "Sign of Wracking",
+        "remaining_seconds": 45,
+        "end_time": 1737234612
+      }
+    ]
+  },
+  "experience": {
+    "experience_to_next_level": 18432,
+    "next_level_percent": 72,
+    "exp_to_next_atp": 12500,
+    "total_atps": 85,
+    "field_experience_current": 850,
+    "field_experience_max": 1000,
+    "ascension_experience": 45000,
+    "percent_capped": 28.19,
+    "last_pulse": 250,
+    "ascension_pulse": 0,
+    "hourly_rate": 8456
+  },
+  "resources": {
+    "weekly": 23450,
+    "total": 156780,
+    "max_weekly": 50000,
+    "max_total": 200000,
+    "voln_favor": 4500
+  },
+  "daily_tracking": {
+    "xp_today": 145632,
+    "xp_history": {
+      "2025-01-18": 287456,
+      "2025-01-17": 312890,
+      "2025-01-16": 198234
+    },
+    "silver_today": 487250,
+    "bounty_points": 3450
+  },
+  "metadata": {
+    "timestamp": 1737234567,
+    "script_version": "1.0.1",
+    "update_interval": 3
+  }
+}
