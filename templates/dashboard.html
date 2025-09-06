@@ -251,6 +251,7 @@
 
         .stats-section {
             margin-bottom: 10px;
+            padding-right: 15px;
         }
 
         .stat-row {
@@ -313,6 +314,10 @@
 
         .bar-fill.spirit {
             background: linear-gradient(90deg, #6600cc, #9933ff);
+        }
+
+        .bar-fill.mindstate {
+            background: linear-gradient(90deg, #ffaa00, #ffcc66);
         }
 
         .bar-text {
@@ -764,6 +769,7 @@
                         ${createVitalBar('Mana', vitals.mana, 'mana')}
                         ${createVitalBar('Stamina', vitals.stamina, 'stamina')}
                         ${createVitalBar('Spirit', vitals.spirit, 'spirit')}
+                        ${createVitalBar('Mindstate', status.mindstate, 'mindstate')}
                     </div>
 
                     <div class="level-section">
