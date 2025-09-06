@@ -746,23 +746,17 @@
                                 <span class="stat-label">TTL:</span>
                                 <span class="stat-value">${calculateTimeToLevel(experience.experience_to_next_level, experience.hourly_rate)}</span>
                             </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Stance:</span>
+                                <span class="stat-value">${status.stance?.text || 'Unknown'}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Encumbrance:</span>
+                                <span class="stat-value">${status.encumbrance?.text || 'Unknown'}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="status-section">
-                        <div class="status-item">
-                            <span class="stat-label">Stance:</span>
-                            <span class="stat-value">${status.stance?.text || 'Unknown'}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="stat-label">Encumbrance:</span>
-                            <span class="stat-value">${status.encumbrance?.text || 'Unknown'}</span>
-                        </div>
-                        <div class="status-item">
-                            <span class="stat-label">Injuries:</span>
-                            <span class="stat-value ${hasInjuries(injuries) ? 'injury-indicator' : ''}">${hasInjuries(injuries) ? 'Yes' : 'None'}</span>
-                        </div>
-                    </div>
 
                     <div class="vitals-section">
                         ${createVitalBar('Health', vitals.health, 'health')}
