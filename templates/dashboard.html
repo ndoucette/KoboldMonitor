@@ -241,7 +241,7 @@
 
         .status-section {
             font-size: 11px;
-            margin-top: 10px;
+            margin: 10px 0;
         }
 
         .status-item {
@@ -250,6 +250,8 @@
             margin: 2px 0;
             border-radius: 2px;
             border-left: 3px solid #0066cc;
+            display: flex;
+            justify-content: space-between;
         }
 
         .injury-indicator {
@@ -516,6 +518,21 @@
                         </div>
                     </div>
 
+                    <div class="status-section">
+                        <div class="status-item">
+                            <span class="stat-label">Stance:</span>
+                            <span class="stat-value">${status.stance?.text || 'Unknown'}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-label">Encumbrance:</span>
+                            <span class="stat-value">${status.encumbrance?.text || 'Unknown'}</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="stat-label">Injuries:</span>
+                            <span class="stat-value ${hasInjuries(injuries) ? 'injury-indicator' : ''}">${hasInjuries(injuries) ? 'Yes' : 'None'}</span>
+                        </div>
+                    </div>
+
                     <div class="vitals-section">
                         ${createVitalBar('Health', vitals.health, 'health')}
                         ${createVitalBar('Mana', vitals.mana, 'mana')}
@@ -543,12 +560,6 @@
                             <div class="progress-bar-fill capped-progress" style="width: ${Math.min(experience.percent_capped || 0, 100)}%"></div>
                             <div class="progress-text">${(experience.percent_capped || 0).toFixed(1)}%</div>
                         </div>
-                    </div>
-
-                    <div class="status-section">
-                        <div class="status-item">${status.stance?.text || 'Unknown'}</div>
-                        <div class="status-item">${status.encumbrance?.text || 'Unknown'}</div>
-                        ${hasInjuries(injuries) ? '<div class="status-item injury-indicator">Injured</div>' : '<div class="status-item">None</div>'}
                     </div>
                 </div>
             `;
