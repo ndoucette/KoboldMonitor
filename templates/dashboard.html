@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GemStone IV Bot Monitor</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: "Courier New", monospace;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #00ffff;
+            font-size: 24px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .header p {
+            color: #cccccc;
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .character-tile {
+            background: linear-gradient(145deg, #2a2a3e, #1a1a2e);
+            border: 1px solid #444444;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+            transition: all 0.3s ease;
+            min-height: 400px;
+        }
+
+        .character-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .inactive-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 0, 0, 0.3);
+            border-radius: 8px;
+            animation: blink 1s infinite alternate;
+            pointer-events: none;
+        }
+
+        @keyframes blink {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.6; }
+        }
+
+        .character-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #00ffff;
+            text-align: center;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px #00ffff;
+        }
+
+        .stats-section {
+            margin-bottom: 10px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+
+        .stat-label {
+            color: #cccccc;
+        }
+
+        .stat-value {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .vitals-section {
+            margin: 15px 0;
+        }
+
+        .vital-bar {
+            margin-bottom: 8px;
+        }
+
+        .vital-label {
+            font-size: 11px;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .bar-container {
+            height: 18px;
+            background-color: #333333;
+            border: 1px solid #555555;
+            border-radius: 2px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+
+        .bar-fill.health {
+            background: linear-gradient(90deg, #cc0000, #ff3333);
+        }
+
+        .bar-fill.mana {
+            background: linear-gradient(90deg, #0066cc, #3399ff);
+        }
+
+        .bar-fill.stamina {
+            background: linear-gradient(90deg, #cc6600, #ff9933);
+        }
+
+        .bar-fill.spirit {
+            background: linear-gradient(90deg, #6600cc, #9933ff);
+        }
+
+        .bar-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            z-index: 1;
+        }
+
+        .level-section {
+            background-color: rgba(0, 102, 204, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+            margin: 10px 0;
+            font-size: 12px;
+            border: 1px solid #0066cc;
+        }
+
+        .status-section {
+            font-size: 11px;
+            margin-top: 10px;
+        }
+
+        .status-item {
+            background-color: rgba(0, 102, 204, 0.3);
+            padding: 3px 6px;
+            margin: 2px 0;
+            border-radius: 2px;
+            border-left: 3px solid #0066cc;
+        }
+
+        .injury-indicator {
+            color: #ff6666;
+            font-weight: bold;
+        }
+
+        .no-characters {
+            text-align: center;
+            color: #888888;
+            font-size: 18px;
+            margin-top: 100px;
+            grid-column: 1 / -1;
+        }
+
+        .last-update {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            font-size: 9px;
+            color: #888888;
+        }
+
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .connected {
+            background-color: #00cc00;
+            color: #ffffff;
+        }
+
+        .disconnected {
+            background-color: #cc0000;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">Connecting...</div>
+    
+    <div class="header">
+        <h1>GemStone IV Bot Monitor</h1>
+        <p>Real-time monitoring of your bot army</p>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="no-characters" id="noCharacters">
+            No active characters. Waiting for bot updates...
+        </div>
+    </div>
+
+    <script>
+        // Initialize Socket.IO connection
+        const socket = io();
+        let characters = {};
+        const INACTIVE_THRESHOLD = 20000; // 20 seconds in milliseconds
+
+        // Connection status handling
+        socket.on('connect', function() {
+            console.log('Connected to server');
+            document.getElementById('connectionStatus').textContent = 'Connected';
+            document.getElementById('connectionStatus').className = 'connection-status connected';
+        });
+
+        socket.on('disconnect', function() {
+            console.log('Disconnected from server');
+            document.getElementById('connectionStatus').textContent = 'Disconnected';
+            document.getElementById('connectionStatus').className = 'connection-status disconnected';
+        });
+
+        // Handle initial characters state
+        socket.on('characters_state', function(data) {
+            characters = data;
+            updateDashboard();
+        });
+
+        // Handle individual character updates
+        socket.on('character_update', function(data) {
+            characters[data.character_name] = data.data;
+            updateDashboard();
+        });
+
+        // Handle character removal
+        socket.on('character_removed', function(data) {
+            delete characters[data.character_name];
+            updateDashboard();
+        });
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function getTimeSince(timestamp) {
+            const now = Date.now() / 1000;
+            const diff = now - timestamp;
+            
+            if (diff < 60) {
+                return Math.floor(diff) + 's ago';
+            } else if (diff < 3600) {
+                return Math.floor(diff / 60) + 'm ago';
+            } else {
+                return Math.floor(diff / 3600) + 'h ago';
+            }
+        }
+
+        function hasInjuries(injuries) {
+            if (!injuries || !injuries.wounds) return false;
+            
+            for (const [part, level] of Object.entries(injuries.wounds)) {
+                if (part !== 'nsys' && level > 0) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function createCharacterTile(charName, charData) {
+            const currentTime = Date.now() / 1000;
+            const lastUpdate = charData.server_timestamp || 0;
+            const isInactive = (currentTime - lastUpdate) > (INACTIVE_THRESHOLD / 1000);
+
+            const character = charData.character || {};
+            const vitals = charData.vitals || {};
+            const status = charData.status || {};
+            const experience = charData.experience || {};
+            const resources = charData.resources || {};
+            const dailyTracking = charData.daily_tracking || {};
+            const location = charData.location || {};
+            const injuries = charData.injuries || {};
+
+            return `
+                <div class="character-tile" id="char-${charName}">
+                    ${isInactive ? '<div class="inactive-overlay"></div>' : ''}
+                    <div class="last-update">${getTimeSince(lastUpdate)}</div>
+                    <div class="character-name">${charName}</div>
+                    
+                    <div class="stats-section">
+                        <div class="stat-row">
+                            <span class="stat-label">Today:</span>
+                            <span class="stat-value">${formatNumber(dailyTracking.xp_today || 0)}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">AVG/Hr:</span>
+                            <span class="stat-value">${formatNumber(experience.hourly_rate || 0)}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Pulse:</span>
+                            <span class="stat-value">${experience.last_pulse || 0}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Room:</span>
+                            <span class="stat-value">${location.room_id || '??'}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Silver:</span>
+                            <span class="stat-value">${formatNumber(dailyTracking.silver_today || 0)}</span>
+                        </div>
+                        <div class="stat-row">
+                            <span class="stat-label">Bounty:</span>
+                            <span class="stat-value">${dailyTracking.bounty_points || 0}</span>
+                        </div>
+                    </div>
+
+                    <div class="vitals-section">
+                        ${createVitalBar('Health', vitals.health, 'health')}
+                        ${createVitalBar('Mana', vitals.mana, 'mana')}
+                        ${createVitalBar('Stamina', vitals.stamina, 'stamina')}
+                        ${createVitalBar('Spirit', vitals.spirit, 'spirit')}
+                    </div>
+
+                    <div class="level-section">
+                        Level: ${character.level || 0} (${experience.next_level_percent || 0}%) ${formatNumber(experience.experience_to_next_level || 0)} TNL
+                    </div>
+
+                    <div class="status-section">
+                        <div class="status-item">${status.stance?.text || 'Unknown'}</div>
+                        <div class="status-item">${status.encumbrance?.text || 'Unknown'}</div>
+                        ${hasInjuries(injuries) ? '<div class="status-item injury-indicator">Injured</div>' : '<div class="status-item">None</div>'}
+                        <div class="status-item">${(experience.percent_capped || 0).toFixed(1)}% Capped</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createVitalBar(name, vital, className) {
+            if (!vital) return '';
+            
+            const percent = vital.percent || 0;
+            const current = vital.current || 0;
+            const max = vital.max || 0;
+
+            return `
+                <div class="vital-bar">
+                    <div class="vital-label">
+                        <span>${name}</span>
+                        <span>${current}/${max}</span>
+                    </div>
+                    <div class="bar-container">
+                        <div class="bar-fill ${className}" style="width: ${percent}%"></div>
+                        <div class="bar-text">${current}/${max}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateDashboard() {
+            const dashboard = document.getElementById('dashboard');
+            const noCharacters = document.getElementById('noCharacters');
+            
+            const characterCount = Object.keys(characters).length;
+            
+            if (characterCount === 0) {
+                dashboard.innerHTML = '<div class="no-characters">No active characters. Waiting for bot updates...</div>';
+                return;
+            }
+
+            // Hide no characters message and show character tiles
+            let html = '';
+            Object.entries(characters).forEach(([charName, charData]) => {
+                html += createCharacterTile(charName, charData);
+            });
+            
+            dashboard.innerHTML = html;
+        }
+
+        // Update dashboard every 2 seconds to check for inactive characters
+        setInterval(updateDashboard, 2000);
+
+        // Initial load
+        updateDashboard();
+    </script>
+</body>
+</html>
