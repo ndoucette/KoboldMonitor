@@ -49,7 +49,67 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             position: relative;
             transition: all 0.3s ease;
-            min-height: 400px;
+            min-height: 450px;
+        }
+
+        .top-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .manequin-section {
+            flex: 0 0 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stats-section {
+            flex: 0 0 50%;
+        }
+
+        .progress-bar-container {
+            height: 16px;
+            background-color: #333333;
+            border: 1px solid #555555;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+            border-radius: 7px;
+        }
+
+        .progress-bar-fill.level-progress {
+            background: linear-gradient(90deg, #00cc00, #66ff66);
+        }
+
+        .progress-bar-fill.capped-progress {
+            background: linear-gradient(90deg, #cc9900, #ffcc00);
+        }
+
+        .progress-label {
+            font-size: 11px;
+            color: #cccccc;
+            margin-bottom: 2px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 9px;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+            color: #ffffff;
+            z-index: 1;
         }
 
         .character-tile:hover {
@@ -165,10 +225,18 @@
             background-color: rgba(0, 102, 204, 0.2);
             padding: 8px;
             border-radius: 4px;
-            text-align: center;
             margin: 10px 0;
             font-size: 12px;
             border: 1px solid #0066cc;
+        }
+
+        .capped-section {
+            background-color: rgba(204, 153, 0, 0.2);
+            padding: 8px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-size: 12px;
+            border: 1px solid #cc9900;
         }
 
         .status-section {
@@ -246,7 +314,6 @@
         .manequin-container {
             width: 80px;
             height: 120px;
-            margin: 10px auto;
             position: relative;
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 120"><path d="M40 5 C50 5 55 15 55 25 C55 30 50 35 45 35 L45 45 C50 45 60 50 60 70 L60 85 C65 85 70 90 70 100 L70 115 L55 115 L55 105 C55 100 50 95 45 95 L35 95 C30 95 25 100 25 105 L25 115 L10 115 L10 100 C10 90 15 85 20 85 L20 70 C20 50 30 45 35 45 L35 35 C30 35 25 30 25 25 C25 15 30 5 40 5 Z" fill="%23444444" stroke="%23666666" stroke-width="1"/></svg>') center center no-repeat;
             background-size: contain;
@@ -417,30 +484,35 @@
                     <div class="last-update">${getTimeSince(lastUpdate)}</div>
                     <div class="character-name">${charName}</div>
                     
-                    <div class="stats-section">
-                        <div class="stat-row">
-                            <span class="stat-label">Today:</span>
-                            <span class="stat-value">${formatNumber(dailyTracking.xp_today || 0)}</span>
+                    <div class="top-section">
+                        <div class="manequin-section">
+                            ${createManequin(injuries)}
                         </div>
-                        <div class="stat-row">
-                            <span class="stat-label">AVG/Hr:</span>
-                            <span class="stat-value">${formatNumber(experience.hourly_rate || 0)}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Pulse:</span>
-                            <span class="stat-value">${experience.last_pulse || 0}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Room:</span>
-                            <span class="stat-value">${location.room_id || '??'}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Silver:</span>
-                            <span class="stat-value">${formatNumber(dailyTracking.silver_today || 0)}</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label">Bounty:</span>
-                            <span class="stat-value">${dailyTracking.bounty_points || 0}</span>
+                        <div class="stats-section">
+                            <div class="stat-row">
+                                <span class="stat-label">Today:</span>
+                                <span class="stat-value">${formatNumber(dailyTracking.xp_today || 0)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">AVG/Hr:</span>
+                                <span class="stat-value">${formatNumber(experience.hourly_rate || 0)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Pulse:</span>
+                                <span class="stat-value">${experience.last_pulse || 0}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Room:</span>
+                                <span class="stat-value">${location.room_id || '??'}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Silver:</span>
+                                <span class="stat-value">${formatNumber(dailyTracking.silver_today || 0)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Bounty:</span>
+                                <span class="stat-value">${dailyTracking.bounty_points || 0}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -451,17 +523,32 @@
                         ${createVitalBar('Spirit', vitals.spirit, 'spirit')}
                     </div>
 
-                    ${createManequin(injuries)}
-
                     <div class="level-section">
-                        Level: ${character.level || 0} (${experience.next_level_percent || 0}%) ${formatNumber(experience.experience_to_next_level || 0)} TNL
+                        <div class="progress-label">
+                            <span>Level: ${character.level || 0}</span>
+                            <span>${formatNumber(experience.experience_to_next_level || 0)} TNL</span>
+                        </div>
+                        <div class="progress-bar-container" style="position: relative;">
+                            <div class="progress-bar-fill level-progress" style="width: ${experience.next_level_percent || 0}%"></div>
+                            <div class="progress-text">${experience.next_level_percent || 0}%</div>
+                        </div>
+                    </div>
+
+                    <div class="capped-section">
+                        <div class="progress-label">
+                            <span>Experience Cap</span>
+                            <span>${(experience.percent_capped || 0).toFixed(1)}%</span>
+                        </div>
+                        <div class="progress-bar-container" style="position: relative;">
+                            <div class="progress-bar-fill capped-progress" style="width: ${Math.min(experience.percent_capped || 0, 100)}%"></div>
+                            <div class="progress-text">${(experience.percent_capped || 0).toFixed(1)}%</div>
+                        </div>
                     </div>
 
                     <div class="status-section">
                         <div class="status-item">${status.stance?.text || 'Unknown'}</div>
                         <div class="status-item">${status.encumbrance?.text || 'Unknown'}</div>
                         ${hasInjuries(injuries) ? '<div class="status-item injury-indicator">Injured</div>' : '<div class="status-item">None</div>'}
-                        <div class="status-item">${(experience.percent_capped || 0).toFixed(1)}% Capped</div>
                     </div>
                 </div>
             `;
