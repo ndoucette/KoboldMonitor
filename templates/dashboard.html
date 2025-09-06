@@ -723,7 +723,7 @@
 
             return `
                 <div class="character-tile" id="char-${charName}">
-                    ${isInactive ? '<div class="inactive-overlay"></div><div class="close-button" onclick="removeCharacter(\'${charName}\')">&times;</div>' : ''}
+                    ${isInactive ? `<div class="inactive-overlay"></div><div class="close-button" data-char-name="${charName}" onclick="removeCharacter(this.getAttribute('data-char-name'))">&times;</div>` : ''}
                     <div class="last-update">${getTimeSince(lastUpdate)}</div>
                     <div class="character-name">${charName}</div>
                     <div class="character-location">
