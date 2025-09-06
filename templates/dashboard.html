@@ -599,8 +599,7 @@
             
             effects.forEach(effect => {
                 const maxDuration = 14400; // 4 hours max duration for all spells
-                const elapsedTime = maxDuration - effect.remaining_seconds;
-                const progressPercent = Math.min((elapsedTime / maxDuration) * 100, 100);
+                const progressPercent = Math.min((effect.remaining_seconds / maxDuration) * 100, 100);
                 
                 html += `
                     <div class="effect-bar">
@@ -715,20 +714,12 @@
                                 <span class="stat-value">${formatNumber(experience.hourly_rate || 0)}</span>
                             </div>
                             <div class="stat-row">
-                                <span class="stat-label">Pulse:</span>
-                                <span class="stat-value">${experience.last_pulse || 0}</span>
-                            </div>
-                            <div class="stat-row">
                                 <span class="stat-label">Room:</span>
                                 <span class="stat-value">${location.room_id || '??'}</span>
                             </div>
                             <div class="stat-row">
                                 <span class="stat-label">Silver:</span>
                                 <span class="stat-value">${formatNumber(dailyTracking.silver_today || 0)}</span>
-                            </div>
-                            <div class="stat-row">
-                                <span class="stat-label">Bounty:</span>
-                                <span class="stat-value">${dailyTracking.bounty_points || 0}</span>
                             </div>
                         </div>
                     </div>
