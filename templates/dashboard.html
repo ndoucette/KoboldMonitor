@@ -528,6 +528,22 @@
             }
         }
 
+        function calculateTimeToLevel(expNeeded, hourlyRate) {
+            if (!expNeeded || !hourlyRate || hourlyRate <= 0) {
+                return 'N/A';
+            }
+            
+            const hoursNeeded = expNeeded / hourlyRate;
+            const hours = Math.floor(hoursNeeded);
+            const minutes = Math.round((hoursNeeded - hours) * 60);
+            
+            if (hours === 0) {
+                return minutes + 'm';
+            }
+            
+            return hours + 'h ' + minutes + 'm';
+        }
+
         function toggleEffects(characterName) {
             const effectsList = document.getElementById('effects-' + characterName);
             const toggle = document.getElementById('toggle-' + characterName);
@@ -720,6 +736,10 @@
                             <div class="stat-row">
                                 <span class="stat-label">Silver:</span>
                                 <span class="stat-value">${formatNumber(dailyTracking.silver_today || 0)}</span>
+                            </div>
+                            <div class="stat-row">
+                                <span class="stat-label">Time to Level:</span>
+                                <span class="stat-value">${calculateTimeToLevel(experience.experience_to_next_level, experience.hourly_rate)}</span>
                             </div>
                         </div>
                     </div>
