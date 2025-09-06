@@ -531,13 +531,14 @@
         function toggleEffects(characterName) {
             const effectsList = document.getElementById('effects-' + characterName);
             const toggle = document.getElementById('toggle-' + characterName);
+            const totalEffects = getTotalEffects(characters[characterName]?.effects);
             
             if (effectsList.classList.contains('expanded')) {
                 effectsList.classList.remove('expanded');
-                toggle.textContent = 'Show Effects';
+                toggle.textContent = `Show Effects (${totalEffects})`;
             } else {
                 effectsList.classList.add('expanded');
-                toggle.textContent = 'Hide Effects';
+                toggle.textContent = `Hide Effects (${totalEffects})`;
             }
         }
 
@@ -597,8 +598,9 @@
             `;
             
             effects.forEach(effect => {
-                const maxDuration = 3600; // Assume 1 hour max for progress calculation
-                const progressPercent = Math.min((effect.remaining_seconds / maxDuration) * 100, 100);
+                const maxDuration = 14400; // 4 hours max duration for all spells
+                const elapsedTime = maxDuration - effect.remaining_seconds;
+                const progressPercent = Math.min((elapsedTime / maxDuration) * 100, 100);
                 
                 html += `
                     <div class="effect-bar">
@@ -801,6 +803,16 @@
             `;
         }
 
+        function getTotalEffects(effects) {
+            if (!effects) return 0;
+            let totalEffects = 0;
+            if (effects.spells) totalEffects += effects.spells.length;
+            if (effects.buffs) totalEffects += effects.buffs.length;
+            if (effects.debuffs) totalEffects += effects.debuffs.length;
+            if (effects.cooldowns) totalEffects += effects.cooldowns.length;
+            return totalEffects;
+        }
+
         function updateDashboard() {
             const dashboard = document.getElementById('dashboard');
             
@@ -811,6 +823,15 @@
                 return;
             }
 
+            // Store expanded states before updating
+            const expandedStates = {};
+            for (const charName of Object.keys(characters)) {
+                const effectsList = document.getElementById('effects-' + charName);
+                if (effectsList && effectsList.classList.contains('expanded')) {
+                    expandedStates[charName] = true;
+                }
+            }
+
             // Show character tiles
             let html = '';
             Object.entries(characters).forEach(([charName, charData]) => {
@@ -818,6 +839,19 @@
             });
             
             dashboard.innerHTML = html;
+
+            // Restore expanded states
+            for (const [charName, isExpanded] of Object.entries(expandedStates)) {
+                if (isExpanded) {
+                    const effectsList = document.getElementById('effects-' + charName);
+                    const toggle = document.getElementById('toggle-' + charName);
+                    if (effectsList && toggle) {
+                        effectsList.classList.add('expanded');
+                        const totalEffects = getTotalEffects(characters[charName]?.effects);
+                        toggle.textContent = `Hide Effects (${totalEffects})`;
+                    }
+                }
+            }
         }
 
         function addTestCharacter() {
