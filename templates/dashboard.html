@@ -585,7 +585,7 @@
             
             effectsHtml += `
                 <div class="effects-section">
-                    <button class="effects-toggle" id="toggle-${characterName}" onclick="toggleEffects('${characterName}')">
+                    <button class="effects-toggle" id="toggle-${characterName}" data-char-name="${characterName}" onclick="toggleEffects(this.getAttribute('data-char-name'))">
                         Show Effects (${totalEffects})
                     </button>
                     <div class="effects-list" id="effects-${characterName}">
