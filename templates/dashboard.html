@@ -556,25 +556,18 @@
         }
 
         function toggleEffects(characterName) {
-            console.log('toggleEffects called for:', characterName);
             const effectsList = document.getElementById('effects-' + characterName);
             const toggle = document.getElementById('toggle-' + characterName);
             const totalEffects = getTotalEffects(characters[characterName]?.effects);
-            
-            console.log('Found elements:', effectsList, toggle);
             
             if (effectsList && toggle) {
                 if (effectsList.classList.contains('expanded')) {
                     effectsList.classList.remove('expanded');
                     toggle.textContent = `Show Effects (${totalEffects})`;
-                    console.log('Hiding effects for', characterName);
                 } else {
                     effectsList.classList.add('expanded');
                     toggle.textContent = `Hide Effects (${totalEffects})`;
-                    console.log('Showing effects for', characterName);
                 }
-            } else {
-                console.error('Could not find elements for', characterName);
             }
         }
 
@@ -867,7 +860,6 @@
                 const effectsList = document.getElementById('effects-' + charName);
                 if (effectsList && effectsList.classList.contains('expanded')) {
                     expandedStates[charName] = true;
-                    console.log('Stored expanded state for:', charName);
                 }
             }
 
@@ -888,7 +880,6 @@
                         effectsList.classList.add('expanded');
                         const totalEffects = getTotalEffects(characters[charName]?.effects);
                         toggle.textContent = `Hide Effects (${totalEffects})`;
-                        console.log('Restored expanded state for:', charName);
                     }
                 }
             }
