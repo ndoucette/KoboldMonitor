@@ -556,16 +556,25 @@
         }
 
         function toggleEffects(characterName) {
+            console.log('toggleEffects called for:', characterName);
             const effectsList = document.getElementById('effects-' + characterName);
             const toggle = document.getElementById('toggle-' + characterName);
             const totalEffects = getTotalEffects(characters[characterName]?.effects);
             
-            if (effectsList.classList.contains('expanded')) {
-                effectsList.classList.remove('expanded');
-                toggle.textContent = `Show Effects (${totalEffects})`;
+            console.log('Found elements:', effectsList, toggle);
+            
+            if (effectsList && toggle) {
+                if (effectsList.classList.contains('expanded')) {
+                    effectsList.classList.remove('expanded');
+                    toggle.textContent = `Show Effects (${totalEffects})`;
+                    console.log('Hiding effects for', characterName);
+                } else {
+                    effectsList.classList.add('expanded');
+                    toggle.textContent = `Hide Effects (${totalEffects})`;
+                    console.log('Showing effects for', characterName);
+                }
             } else {
-                effectsList.classList.add('expanded');
-                toggle.textContent = `Hide Effects (${totalEffects})`;
+                console.error('Could not find elements for', characterName);
             }
         }
 
