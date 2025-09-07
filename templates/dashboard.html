@@ -867,6 +867,7 @@
                 const effectsList = document.getElementById('effects-' + charName);
                 if (effectsList && effectsList.classList.contains('expanded')) {
                     expandedStates[charName] = true;
+                    console.log('Stored expanded state for:', charName);
                 }
             }
 
@@ -887,6 +888,7 @@
                         effectsList.classList.add('expanded');
                         const totalEffects = getTotalEffects(characters[charName]?.effects);
                         toggle.textContent = `Hide Effects (${totalEffects})`;
+                        console.log('Restored expanded state for:', charName);
                     }
                 }
             }
