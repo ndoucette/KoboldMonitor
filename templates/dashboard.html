@@ -556,19 +556,34 @@
         }
 
         function toggleEffects(characterName) {
+            console.log('TOGGLE: Starting for', characterName);
             const effectsList = document.getElementById('effects-' + characterName);
             const toggle = document.getElementById('toggle-' + characterName);
             const totalEffects = getTotalEffects(characters[characterName]?.effects);
+            
+            // Check all effects lists before making changes
+            console.log('BEFORE TOGGLE - All expanded effects:');
+            document.querySelectorAll('.effects-list.expanded').forEach(el => {
+                console.log('  - Expanded:', el.id);
+            });
             
             if (effectsList && toggle) {
                 if (effectsList.classList.contains('expanded')) {
                     effectsList.classList.remove('expanded');
                     toggle.textContent = `Show Effects (${totalEffects})`;
+                    console.log('TOGGLE: Removed expanded from', characterName);
                 } else {
                     effectsList.classList.add('expanded');
                     toggle.textContent = `Hide Effects (${totalEffects})`;
+                    console.log('TOGGLE: Added expanded to', characterName);
                 }
             }
+            
+            // Check all effects lists after making changes
+            console.log('AFTER TOGGLE - All expanded effects:');
+            document.querySelectorAll('.effects-list.expanded').forEach(el => {
+                console.log('  - Expanded:', el.id);
+            });
         }
 
         function createEffectsSection(effects, characterName) {
