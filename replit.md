@@ -41,6 +41,17 @@ Preferred communication style: Simple, everyday language.
 - **Authentication**: No authentication layer implemented (assumes trusted network environment)
 - **Input Validation**: Basic JSON validation for character data structure
 
+## Project Structure
+
+### Core Files
+- `main.py`: Flask backend with REST API and WebSocket server
+- `templates/dashboard.html`: Single-page dashboard application (HTML + CSS + JS)
+- `requirements.txt`: Python dependencies
+- `lich/web_status_reporter.lic`: Lich script for sending character data from in-game clients
+
+### Lich Script Integration
+The `lich/` directory contains the game-side Lich script that must be copied to the Lich scripts directory to run. This script collects character status data and sends it to the dashboard via HTTP POST every 3 seconds. Storing it in this repository ensures interface consistency between the game client and web dashboard.
+
 ## External Dependencies
 
 ### Runtime Dependencies
@@ -52,7 +63,7 @@ Preferred communication style: Simple, everyday language.
 - **Socket.IO Client**: CDN-hosted client library (v4.5.4) for real-time communication
 
 ### Game Integration
-- **Lich Scripts**: External game automation scripts that send character data updates
+- **Lich Script** (`lich/web_status_reporter.lic`): In-game script that sends character data updates
 - **GemStone IV**: Target game environment providing character status information
 
 ### Infrastructure

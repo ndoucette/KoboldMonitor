@@ -6,6 +6,7 @@ A real-time web dashboard for monitoring multiple GemStone IV game characters ru
 - [Overview](#overview)
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
+- [Lich Script Setup](#lich-script-setup)
 - [API Documentation](#api-documentation)
 - [Frontend Architecture](#frontend-architecture)
 - [Key Features](#key-features)
@@ -111,10 +112,161 @@ python main.py
 ### Access Dashboard
 Open browser to: `http://localhost:5000`
 
-### Send Character Data
-Lich scripts should POST to: `http://localhost:5000/api/character/update`
+### Send Character Data from Lich Scripts
+The repository includes a Lich script that automatically sends character data to the dashboard. See [Lich Script Setup](#lich-script-setup) for details.
 
-Example payload structure in [API Documentation](#api-documentation) below.
+## Lich Script Setup
+
+### Overview
+The `lich/web_status_reporter.lic` script runs inside the GemStone IV game client (via the Lich scripting system) and automatically collects character status data, sending it to the dashboard REST API every 3 seconds.
+
+### Installation
+
+1. **Copy the script to your Lich scripts directory**:
+   ```bash
+   # From this repository's lich/ directory
+   cp lich/web_status_reporter.lic /path/to/lich/scripts/
+   ```
+
+2. **Start the script in-game**:
+   ```
+   ;web_status_reporter
+   ```
+
+3. **Configure for your dashboard URL** (if different from default):
+   ```
+   ;web_status_reporter --url=http://your-server-ip:5000/api/character/update
+   ```
+
+### Script Commands
+
+**Basic Usage**:
+```
+;web_status_reporter                    # Start with default settings
+;web_status_reporter --help             # Show help information
+```
+
+**Configuration Options**:
+```
+;web_status_reporter --url=URL          # Set dashboard endpoint URL
+;web_status_reporter --interval=5       # Set update interval (seconds)
+;web_status_reporter --api-key=KEY      # Set API key for authentication
+;web_status_reporter --enable           # Enable the reporter
+;web_status_reporter --disable          # Disable the reporter
+```
+
+**Example with Multiple Options**:
+```
+;web_status_reporter --url=https://your-dashboard.com/api/character/update --interval=2
+```
+
+### Default Configuration
+
+The script defaults are:
+- **URL**: `http://18.221.155.124:5000/api/character/update` (update this for your server)
+- **Update Interval**: 3 seconds
+- **API Key**: None (optional)
+- **Enabled**: Yes
+
+Settings are persisted in `CharSettings[:web_status_settings]` and saved between game sessions.
+
+### Data Collected by Script
+
+The Lich script automatically collects and sends:
+
+**Character Info**:
+- Name and level
+
+**Vitals** (current/max/percent):
+- Health, Mana, Stamina, Spirit
+
+**Status**:
+- Stance (offensive, defensive, guarded, etc.)
+- Mindstate (clear, muddled, becoming numbed, etc.)
+- Encumbrance (none, light, moderate, etc.)
+
+**Injuries**:
+- Wounds and scars for all body parts
+- Compatible with dashboard's injury visualization system
+
+**Location**:
+- Current room ID and title
+
+**Effects**:
+- Active spells with remaining durations
+- Buffs and debuffs
+- Cooldowns
+
+**Experience**:
+- Experience to next level
+- Next level percentage
+- Field experience (current and max)
+- Ascension experience
+- Hourly experience rate (calculated automatically)
+- Last experience pulse
+- Percent of level cap
+
+**Resources** (profession-dependent):
+- Weekly/total resources for classes that have them
+- Voln favor (if in Voln society)
+
+**Daily Tracking**:
+- Experience earned today
+- Silver earned today (if using bank/ledger scripts)
+- Bounty points earned (if using bounty_hud script)
+
+**Metadata**:
+- Timestamp
+- Script version
+- Update interval
+
+### How It Works
+
+1. **Experience Tracking**: The script tracks experience changes over time to calculate hourly rates and pulse amounts (based on uberbar_eo logic)
+
+2. **Effects Monitoring**: Uses the Effects API to track active spells, buffs, debuffs, and cooldowns with remaining durations
+
+3. **Automatic Updates**: Runs in a loop, sending data at the configured interval (default 3 seconds)
+
+4. **Error Handling**: Gracefully handles missing data, API failures, and network issues without crashing
+
+5. **Silent Operation**: Uses `hide_me` and `silence_me` to run quietly in the background
+
+### Compatibility Notes
+
+- **Lich Version**: Requires Lich >= 5.11.0
+- **Based On**: uberbar_eo by elanthia-online contributors
+- **Game**: GemStone IV only
+
+### Troubleshooting
+
+**Script not sending data**:
+1. Check that the dashboard server is running: `curl http://localhost:5000/api/characters`
+2. Verify URL is correct in script settings
+3. Enable debug mode in Lich to see error messages
+
+**Data not appearing on dashboard**:
+1. Check browser console for WebSocket connection errors
+2. Verify character name matches between script and dashboard
+3. Ensure server is reachable from game client (firewall/network)
+
+**Experience rate showing 0**:
+- The script needs time to track experience changes
+- Gain some experience, wait a few minutes for hourly rate to calculate
+
+### Keeping Interfaces Consistent
+
+The Lich script is stored in this repository (even though it runs in Lich's scripts directory) to ensure the data format sent by the script matches what the dashboard expects. 
+
+**When modifying the dashboard's API**:
+1. Update `main.py` REST endpoint
+2. Update the corresponding section in `lich/web_status_reporter.lic`
+3. Test with actual game data before deploying
+
+**When modifying displayed data**:
+1. Check if the Lich script already sends that data
+2. If not, add collection logic to `collect_status_data()` in the Lich script
+3. Update dashboard's `createCharacterCard()` function to display it
 
 ## API Documentation
 
