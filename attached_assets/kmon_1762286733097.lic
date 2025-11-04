@@ -1,0 +1,443 @@
+=begin
+  
+  Script: web_status_reporter
+  Author: Based on uberbar_eo by elanthia-online contributors
+  Game: Gemstone IV
+  Tags: monitoring, web, status, bot
+  Version: 1.0.1
+  Required: Lich >= 5.11.0
+  
+  Description:
+    Collects character status information and sends it to a REST endpoint
+    for centralized monitoring of multiple characters on a web dashboard.
+    
+  Usage:
+    ;web_status_reporter --url=https://your-server.com/api/status --interval=3
+    ;web_status_reporter --url=http://localhost:3000/status --interval=5 --api-key=your-key
+    
+=end
+
+require 'net/http'
+require 'json'
+require 'uri'
+
+no_kill_all
+no_pause_all
+hide_me
+silence_me
+
+module WebStatusReporter
+  @settings = CharSettings[:web_status_settings] || {}
+  @settings['url'] ||= 'http://18.221.155.124:5000/api/character/update'
+  @settings['interval'] ||= 3
+  @settings['api_key'] ||= nil
+  @settings['enabled'] ||= true
+  
+  # Experience tracking variables
+  @xp_first_time = Time.now - 1
+  @xp_last = 0
+  @xp_total = 0
+  @asc_pulse = 0
+  @asc_exp = 0
+  @asc_total = 0
+  @first_pulse = true
+  
+  before_dying {
+    CharSettings[:web_status_settings] = @settings
+  }
+  
+  def self.parse_args
+    Script.current.vars[1..-1].each do |arg|
+      if arg =~ /^--url=(.+)$/
+        @settings['url'] = $1
+        echo "REST endpoint set to: #{@settings['url']}"
+      elsif arg =~ /^--interval=(\d+)$/
+        @settings['interval'] = $1.to_i
+        echo "Update interval set to: #{@settings['interval']} seconds"
+      elsif arg =~ /^--api-key=(.+)$/
+        @settings['api_key'] = $1
+        echo "API key configured"
+      elsif arg =~ /^--enable$/
+        @settings['enabled'] = true
+        echo "Web status reporter enabled"
+      elsif arg =~ /^--disable$/
+        @settings['enabled'] = false
+        echo "Web status reporter disabled"
+      elsif arg =~ /^--help$/
+        show_help
+        exit
+      end
+    end
+    
+    CharSettings[:web_status_settings] = @settings
+  end
+  
+  def self.show_help
+    respond ""
+    respond "Web Status Reporter - Sends character status to REST endpoint"
+    respond ""
+    respond "Usage:"
+    respond "  ;#{Script.current.name} [options]"
+    respond ""
+    respond "Options:"
+    respond "  --url=URL           REST endpoint URL (default: http://localhost:3000/api/character_status)"
+    respond "  --interval=SECONDS  Update interval in seconds (default: 3)"
+    respond "  --api-key=KEY       Optional API key for authentication"
+    respond "  --enable            Enable the reporter"
+    respond "  --disable           Disable the reporter"
+    respond "  --help              Show this help message"
+    respond ""
+  end
+  
+  def self.get_wounds_data
+    wounds = {}
+    scars = {}
+    
+    areas = ["nsys", "head", "neck", "chest", "abdomen", "back",
+             "leftArm", "rightArm", "leftHand", "rightHand",
+             "leftLeg", "rightLeg", "leftFoot", "rightFoot",
+             "leftEye", "rightEye"]
+    
+    areas.each do |area|
+      wounds[area] = Wounds.send(area) rescue 0
+      scars[area] = Scars.send(area) rescue 0
+    end
+    
+    return { wounds: wounds, scars: scars }
+  end
+  
+  def self.get_resource_data
+    resource_data = {}
+    
+    # Check if profession has resources (matching uberbar_eo logic)
+    case Stats.prof
+    when 'Bard'
+      has_resources = Spell[1030].known?
+    when 'Cleric'
+      has_resources = Spell[330].known?
+    when 'Empath'
+      has_resources = Spell[1135].known?
+    when 'Monk'
+      has_resources = Stats.level >= 20
+    when 'Paladin'
+      has_resources = Spell[1620].known?
+    when 'Ranger'
+      has_resources = Spell[620].known?
+    when 'Rogue'
+      has_resources = Stats.level >= 20
+    when 'Sorcerer'
+      has_resources = Spell[735].known?
+    when 'Warrior'
+      has_resources = Stats.level >= 20
+    when 'Wizard'
+      has_resources = Spell[925].known?
+    else
+      has_resources = false
+    end
+    
+    if has_resources
+      resource_data[:weekly] = Resources.weekly rescue 0
+      resource_data[:total] = Resources.total rescue 0
+      resource_data[:max_weekly] = 50000
+      resource_data[:max_total] = 200000
+    end
+    
+    if Society.status =~ /Voln/
+      resource_data[:voln_favor] = Resources.voln_favor rescue 0
+    end
+    
+    resource_data
+  end
+  
+  def self.get_effects_data
+    effects = {}
+    
+    # Get all active effects (spells, buffs, debuffs, cooldowns)
+    # Based on effectmon.lic approach
+    [:spells, :buffs, :debuffs, :cooldowns].each do |effect_type|
+      effects[effect_type] = []
+      
+      begin
+        effect_hash = case effect_type
+        when :spells
+          Effects::Spells
+        when :buffs
+          Effects::Buffs
+        when :debuffs
+          Effects::Debuffs
+        when :cooldowns
+          Effects::Cooldowns
+        end
+        
+        # Filter out numeric keys and expired effects
+        active_effects = effect_hash.to_h.reject { |k, v| k.is_a?(Integer) or v <= Time.now }
+        
+        active_effects.each do |name, end_time|
+          remaining_seconds = (end_time - Time.now).to_i
+          next if remaining_seconds <= 0
+          
+          effects[effect_type] << {
+            name: name,
+            remaining_seconds: remaining_seconds,
+            end_time: end_time.to_i
+          }
+        end
+        
+        # Sort by remaining time
+        effects[effect_type].sort_by! { |e| e[:remaining_seconds] }
+      rescue => e
+        echo "Error getting #{effect_type}: #{e}" if $debug_mode
+      end
+    end
+    
+    effects
+  end
+  
+  def self.get_experience_data
+    exp_data = {}
+    
+    # Parse experience info (matching uberbar_eo silent check)
+    begin
+      res = Lich::Util.quiet_command_xml("exp", /<output class="mono"\/>/, /<prompt time=/)
+      
+      res.each do |line|
+        if line =~ /Exp to next ATP:\s+([\d,]+)/i
+          exp_data[:exp_to_next_atp] = $1.delete(',').to_i
+        end
+        if line =~ /ATPs:\s+([\d,]+)/i
+          exp_data[:total_atps] = $1.delete(',').to_i
+        end
+      end
+    rescue => e
+      echo "Error getting experience data: #{e}" if $debug_mode
+    end
+    
+    # Calculate experience values like uberbar_eo
+    xpn_nlt = XMLData.next_level_text
+    if xpn_nlt =~ /( experience| until next level)/
+      xpn_cur = xpn_nlt.delete(' experience').delete(' until next level').to_i
+      exp_data[:experience_to_next_level] = xpn_cur
+    else
+      exp_data[:experience_to_next_level] = 0
+    end
+    
+    exp_data[:next_level_percent] = XMLData.next_level_value.to_i rescue 0
+    exp_data[:field_experience_current] = Experience.fxp_current rescue 0
+    exp_data[:field_experience_max] = Experience.fxp_max rescue 0
+    exp_data[:ascension_experience] = Experience.axp rescue 0
+    exp_data[:percent_capped] = ((Stats.exp).fdiv(7_572_500) * 100).round(2) rescue 0
+    
+    # Track pulse data
+    if @asc_exp != 0
+      exp_data[:ascension_pulse] = Experience.axp - @asc_exp
+    else
+      exp_data[:ascension_pulse] = 0
+    end
+    
+    exp_data[:last_pulse] = @xp_last + (@asc_pulse || 0)
+    
+    # Calculate hourly rate
+    time_elapsed = Time.now - @xp_first_time
+    if time_elapsed > 0
+      exp_data[:hourly_rate] = ((1.00 * @xp_total) / (time_elapsed / 3600.00)).to_i
+    else
+      exp_data[:hourly_rate] = 0
+    end
+    
+    exp_data
+  end
+  
+  def self.update_experience_tracking
+    # Update experience tracking when experience changes
+    xpn_nlt = XMLData.next_level_text
+    if xpn_nlt =~ /( experience| until next level)/
+      xpn_cur = xpn_nlt.delete(' experience').delete(' until next level').to_i
+      
+      unless @first_pulse
+        @xp_last = @xpn_old - xpn_cur if @xpn_old
+        @xp_last *= -1 if @xp_last < 0
+        @xp_last = 0 if @xp_last > 2499
+        
+        @asc_pulse = Experience.axp - @asc_exp if @asc_exp != 0
+        @xp_total += @xp_last + @asc_pulse
+        @asc_total += @asc_pulse
+      else
+        @xp_first_time = Time.now - 1
+        @xp_total = 0
+        @asc_total = 0
+        @xp_last = 0
+        @first_pulse = false
+      end
+      
+      @xpn_old = xpn_cur
+      @asc_exp = Experience.axp
+    end
+  end
+  
+  def self.get_daily_tracking
+    tracking = {}
+    
+    # Daily experience tracking (from uberbar UserVars)
+    tracking[:xp_today] = UserVars.uberbar_xp_per_day || 0
+    tracking[:xp_history] = UserVars.uberbar_xp_history || {}
+    
+    # Silver tracking (requires bank or ledger script)
+    if defined?(Ledger)
+      tracking[:silver_today] = Ledger::Character.daily rescue 0
+    elsif UserVars.bank_silver_per_day
+      tracking[:silver_today] = UserVars.bank_silver_per_day
+    else
+      tracking[:silver_today] = 0
+    end
+    
+    # Bounty tracking (requires bounty_hud or bank script)
+    if defined?(BountyHUD)
+      tracking[:bounty_points] = BountyHUD.metadata.dig(:earned, :recent) rescue 0
+    elsif UserVars.bank_bounty_per_day
+      tracking[:bounty_points] = UserVars.bank_bounty_per_day
+    else
+      tracking[:bounty_points] = 0
+    end
+    
+    tracking
+  end
+  
+  def self.collect_status_data
+    # Update experience tracking before collecting data
+    update_experience_tracking
+    
+    {
+      character: {
+        name: Char.name,
+        level: Stats.level
+      },
+      
+      vitals: {
+        health: {
+          current: Char.health,
+          max: Char.max_health,
+          percent: Char.percent_health
+        },
+        mana: {
+          current: Char.mana,
+          max: Char.max_mana,
+          percent: Char.percent_mana
+        },
+        stamina: {
+          current: Char.stamina,
+          max: Char.max_stamina,
+          percent: Char.percent_stamina
+        },
+        spirit: {
+          current: Char.spirit,
+          max: Char.max_spirit,
+          percent: Char.percent_spirit
+        }
+      },
+      
+      status: {
+        stance: {
+          text: XMLData.stance_text,
+          value: XMLData.stance_value
+        },
+        mindstate: {
+          text: XMLData.mind_text,
+          value: XMLData.mind_value
+        },
+        encumbrance: {
+          text: XMLData.encumbrance_text,
+          value: XMLData.encumbrance_value
+        }
+      },
+      
+      injuries: get_wounds_data(),
+      
+      location: {
+        room_id: Room.current.id,
+        room_title: Room.current.title
+      },
+      
+      effects: get_effects_data(),
+      
+      experience: get_experience_data(),
+      
+      resources: get_resource_data(),
+      
+      daily_tracking: get_daily_tracking(),
+      
+      metadata: {
+        timestamp: Time.now.to_i,
+        script_version: '1.0.1',
+        update_interval: @settings['interval']
+      }
+    }
+  end
+  
+  def self.send_status(data)
+    return unless @settings['enabled']
+    
+    begin
+      uri = URI.parse(@settings['url'])
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = (uri.scheme == 'https')
+      http.open_timeout = 5
+      http.read_timeout = 5
+      
+      request = Net::HTTP::Post.new(uri.path.empty? ? '/' : uri.path)
+      request['Content-Type'] = 'application/json'
+      request['Authorization'] = "Bearer #{@settings['api_key']}" if @settings['api_key']
+      request.body = data.to_json
+      
+      response = http.request(request)
+      
+      if response.code.to_i >= 200 && response.code.to_i < 300
+        echo "Status sent successfully" if $debug_mode
+      else
+        echo "Failed to send status: HTTP #{response.code}" if $debug_mode
+      end
+    rescue => e
+      echo "Error sending status: #{e.message}" if $debug_mode
+    end
+  end
+  
+  def self.main
+    parse_args
+    
+    unless @settings['enabled']
+      echo "Web status reporter is disabled. Use --enable to activate."
+      exit
+    end
+    
+    echo "Starting web status reporter..."
+    echo "Sending to: #{@settings['url']}"
+    echo "Update interval: #{@settings['interval']} seconds"
+    
+    # Initial wait for game data to be available
+    wait_while { XMLData.next_level_text !~ /(experience|until next level)/ or !XMLData.next_level_value.integer? }
+    
+    # Initialize experience tracking
+    @xp_first_time = Time.now - 1
+    @xpn_old = 0
+    @xp_last = 0
+    @xp_total = 0
+    @asc_exp = Experience.axp rescue 0
+    @asc_pulse = 0
+    @asc_total = 0
+    @first_pulse = true
+    
+    loop do
+      begin
+        status_data = collect_status_data()
+        send_status(status_data)
+      rescue => e
+        echo "Error in main loop: #{e.message}"
+        echo e.backtrace.first if $debug_mode
+      end
+      
+      sleep @settings['interval']
+    end
+  end
+end
+
+# Run the script
+WebStatusReporter.main
